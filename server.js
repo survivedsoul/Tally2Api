@@ -55,6 +55,26 @@ const app = express();
 app.disable('x-powered-by');
 app.use(helmet());
 app.use(rateLimit({ windowMs: 60_000, limit: 60 }));
+// ---- Debug route: NO auth, logs whatever it receives. Opt-in via ENABLE_DEBUG_ROUTE=true. ----
+// Registered before express.json so malformed/non-JSON bodies are still captured.
+if (process.env.ENABLE_DEBUG_ROUTE === 'true') {
+  console.warn('WARNING: unauthenticated /debug/echo is ENABLED. Do not use in production.');
+  app.all('/debug/echo', express.raw({ type: () => true, limit: '1mb' }), (req, res) => {
+    const raw = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : '';
+    let parsed;
+    try { parsed = raw ? JSON.parse(raw) : undefined; } catch { /* not JSON */ }
+    console.log('[debug/echo]', JSON.stringify({
+      time: new Date().toISOString(),
+      method: req.method,
+      url: req.originalUrl,
+      ip: req.ip,
+      headers: req.headers,
+      body: parsed !== undefined ? parsed : raw,
+    }, null, 2));
+    res.json({ ok: true, received: { method: req.method, bytes: Buffer.byteLength(raw), json: parsed !== undefined } });
+  });
+}
+
 app.use(express.json({
   limit: '5mb',
   verify: (req, _res, buf) => { req.rawBody = buf; }, // exact bytes for HMAC
