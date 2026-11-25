@@ -6,17 +6,20 @@ const rateLimit = require('express-rate-limit');
 const { Pool } = require('pg');
 
 const { API_KEY, HMAC_SECRET, DATABASE_URL, DB_CA_FILE, PORT = 3000 } = process.env;
-if (!API_KEY || API_KEY.length < 24 || !DATABASE_URL) {
+const DEBUG_ONLY = process.env.ENABLE_DEBUG_ROUTE === 'true';
+const configured = !!(API_KEY && API_KEY.length >= 24 && DATABASE_URL);
+if (!configured && !DEBUG_ONLY) {
   console.error('Set API_KEY (>=24 chars) and DATABASE_URL');
   process.exit(1);
 }
+if (!configured) console.warn('API_KEY/DATABASE_URL not set: running with debug route only; /api/sales disabled.');
 
 // ---- DB: TLS-encrypted connection, parameterised queries only ----
-const pool = new Pool({
+const pool = configured ? new Pool({
   connectionString: DATABASE_URL,
   ssl: DB_CA_FILE ? { ca: fs.readFileSync(DB_CA_FILE, 'utf8'), rejectUnauthorized: true } : undefined,
   max: 5,
-});
+}) : null;
 
 const safeEqual = (a, b) => {
   const ha = crypto.createHash('sha256').update(String(a)).digest();
@@ -26,6 +29,7 @@ const safeEqual = (a, b) => {
 
 // ---- Auth middleware ----
 function authenticate(req, res, next) {
+  if (!configured) return res.status(503).json({ error: 'not configured' });
   const token = (req.get('authorization') || '').replace(/^Bearer\s+/i, '');
   if (!token || !safeEqual(token, API_KEY)) return res.status(401).json({ error: 'unauthorized' });
 
