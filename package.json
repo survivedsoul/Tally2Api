@@ -1,0 +1,13 @@
+{
+  "name": "tally2api",
+  "version": "1.0.0",
+  "private": true,
+  "main": "server.js",
+  "scripts": { "start": "node --env-file=.env server.js" },
+  "dependencies": {
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^8.0.0",
+    "pg": "^8.13.0"
+  }
+}

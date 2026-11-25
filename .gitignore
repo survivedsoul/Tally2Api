@@ -1,0 +1,34 @@
+gitignore
+# Environment & secrets
+.env
+.env.*
+*.pem
+
+# Dependencies
+node_modules/
+venv/
+vendor/
+
+# Build & compiled output
+dist/
+build/
+*.log
+*.class
+__pycache__/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE & editor settings
+.vscode/
+.idea/
+*.swp
+
+# Project Docs
+
+
+# Miscellaneous
+docs/
+schema/
+schema.sql
